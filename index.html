@@ -15,9 +15,6 @@
   <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
   <!-- docx.js for Word Generation -->
   <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
   
@@ -46,7 +43,52 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    // --- 定数定義 ---
+    // --- アイコンコンポーネント ---
+    const Icon = ({ name, className = "w-4 h-4" }) => {
+      const icons = {
+        'edit-3': <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>,
+        'edit-2': <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>,
+        'plus': <path d="M12 5v14M5 12h14"/>,
+        'trash': <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>,
+        'trash-2': <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>,
+        'save': <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/>,
+        'check': <path d="M20 6L9 17l-5-5"/>,
+        'check-circle': <React.Fragment><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></React.Fragment>,
+        'zap': <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
+        'users': <React.Fragment><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></React.Fragment>,
+        'user-plus': <React.Fragment><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></React.Fragment>,
+        'file-badge': <React.Fragment><path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="M14 2v4a1 1 0 0 0 1 1h4"/><path d="M3.8 13.5a2.5 2.5 0 1 0 4.4 0L10 18l-3.5-1.5L3 18l1.8-4.5z"/></React.Fragment>,
+        'file-text': <React.Fragment><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></React.Fragment>,
+        'home': <React.Fragment><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></React.Fragment>,
+        'chevron-right': <polyline points="9 18 15 12 9 6"/>,
+        'book': <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>,
+        'book-open': <React.Fragment><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></React.Fragment>,
+        'sun': <React.Fragment><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></React.Fragment>,
+        'calculator': <React.Fragment><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></React.Fragment>,
+        'palette': <React.Fragment><path d="M12 2a10 10 0 0 0-9.95 9 3 3 0 0 0 2.95 3.33H7a3 3 0 0 1 3 3v.5a2.5 2.5 0 0 0 5 0v-.5A7.5 7.5 0 0 0 12 2z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="12" cy="6" r=".5" fill="currentColor"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="12" r=".5" fill="currentColor"/></React.Fragment>,
+        'music': <React.Fragment><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></React.Fragment>,
+        'activity': <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>,
+        'heart': <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>,
+        'sparkles': <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
+        'bot': <React.Fragment><rect width="18" height="12" x="3" y="6" rx="2"/><path d="M9 11h.01"/><path d="M15 11h.01"/><path d="M12 2v4"/><path d="M4 18v2"/><path d="M20 18v2"/></React.Fragment>,
+        'loader': <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>,
+        'info': <React.Fragment><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></React.Fragment>,
+        'target': <React.Fragment><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></React.Fragment>,
+        'pen-tool': <path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.5 7.5"/>,
+        'calendar': <React.Fragment><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></React.Fragment>,
+        'x': <React.Fragment><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></React.Fragment>,
+        'download': <React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></React.Fragment>,
+        'smile': <React.Fragment><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></React.Fragment>,
+        'shield-check': <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4"/>,
+        'refresh-cw': <React.Fragment><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></React.Fragment>
+      };
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {icons[name] || null}
+        </svg>
+      );
+    };
+
     const SUBJECTS = ['生活', '国語', '算数', '図画工作', '音楽', '体育', '特別活動', '自立活動'];
 
     const SUBJECT_COLORS = {
@@ -71,7 +113,6 @@
       '自立活動': 'heart'
     };
 
-    // 初期デモデータ（実名ではなく仮名・記号での利用を推奨）
     const INITIAL_STUDENTS = [
       { id: 's1', name: '児童A' },
       { id: 's2', name: '児童B' }
@@ -90,6 +131,17 @@
         status: '確定'
       },
       {
+        id: 'u1_s2',
+        studentId: 's2',
+        subject: '国語',
+        title: 'ひらがなを読もう',
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+        goal: '提示されたひらがなカードの中から、自分の名前の文字を選ぶことができる。',
+        evaluation: '',
+        status: '未作成'
+      },
+      {
         id: 'u2',
         studentId: 's1',
         subject: '生活',
@@ -97,6 +149,17 @@
         startDate: '2026-09-01',
         endDate: '',
         goal: '手順表を見ながら、自分の持ち物をロッカーに片付けることができる。',
+        evaluation: '',
+        status: '未作成'
+      },
+      {
+        id: 'u2_s2',
+        studentId: 's2',
+        subject: '生活',
+        title: 'あさのしたくをしよう',
+        startDate: '2026-09-01',
+        endDate: '',
+        goal: '教師の助言を受けながら、帽子をフックにかけることができる。',
         evaluation: '',
         status: '未作成'
       }
@@ -113,17 +176,16 @@
         id: 'l2',
         unitId: 'u1',
         date: '2026-09-08',
-        content: '自分の名前の最初の文字のカードを見せると、自分から嬉しそうに「あ！」と声に出せました。友達の発表中も集中していました。'
+        content: '自分の名前の最初の文字のカードを見せると、自分から嬉しそうに「あ！」と声に出せました。'
       },
       {
         id: 'l3',
         unitId: 'u2',
         date: '2026-09-10',
-        content: 'ランドセルから連絡袋を出す際、手順表の1番目を指さしながら一人で行うことができました。帽子は教師の声かけで片付けました。'
+        content: 'ランドセルから連絡袋を出す際、手順表の1番目を指さしながら一人で行うことができました。'
       }
     ];
 
-    // --- メインコンポーネント ---
     function App() {
       const [students, setStudents] = useState(() => {
         const saved = localStorage.getItem('sp_students');
@@ -140,10 +202,7 @@
         return saved ? JSON.parse(saved) : INITIAL_LOGS;
       });
 
-      // 自動保存インジケーター用状態
       const [lastSavedTime, setLastSavedTime] = useState(null);
-
-      // 画面ナビゲーション状態
       const [nav, setNav] = useState({ view: 'top', studentId: null, subject: null, unitId: null });
 
       // モーダル管理
@@ -152,7 +211,12 @@
       const [showWordExportModal, setShowWordExportModal] = useState(false);
       const [exportStudentId, setExportStudentId] = useState(null);
 
-      // データの自動保存 (ブラウザの localStorage のみ使用)
+      // 新設: 単元追加モーダルの教科ターゲット（null以外で表示）
+      const [addUnitSubjectTarget, setAddUnitSubjectTarget] = useState(null);
+
+      // 単元一括変更ダイアログ
+      const [renameTarget, setRenameTarget] = useState(null);
+
       useEffect(() => {
         localStorage.setItem('sp_students', JSON.stringify(students));
         setLastSavedTime(new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -168,7 +232,6 @@
         setLastSavedTime(new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       }, [logs]);
 
-      // 共用PC対策：端末内ローカルデータの消去（ログアウト相当）
       const handleClearAllLocalData = () => {
         if (confirm('【端末内データの完全消去】\nブラウザに保存されているすべての児童データ・記録を消去します。\n共用PCでの利用終了時やデータリセット時に実行してください。本当に消去しますか？')) {
           localStorage.removeItem('sp_students');
@@ -182,35 +245,91 @@
         }
       };
 
-      // Lucide アイコンレンダリング
-      useEffect(() => {
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
-      });
-
-      // --- ハンドラー関数 ---
       const handleAddStudent = (name) => {
         if (!name.trim()) return;
-        const newStudent = { id: 's_' + Date.now(), name: name.trim() };
+        const newStudentId = 's_' + Date.now();
+        const newStudent = { id: newStudentId, name: name.trim() };
+        
+        const existingSubjectTitles = [];
+        units.forEach(u => {
+          if (!existingSubjectTitles.some(st => st.subject === u.subject && st.title === u.title)) {
+            existingSubjectTitles.push({ subject: u.subject, title: u.title });
+          }
+        });
+
+        const newUnitsForStudent = existingSubjectTitles.map((st, idx) => ({
+          id: `u_${Date.now()}_${idx}`,
+          studentId: newStudentId,
+          subject: st.subject,
+          title: st.title,
+          goal: '',
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: '',
+          evaluation: '',
+          status: '未作成'
+        }));
+
         setStudents(prev => [...prev, newStudent]);
+        if (newUnitsForStudent.length > 0) {
+          setUnits(prev => [...prev, ...newUnitsForStudent]);
+        }
         setShowAddStudentModal(false);
       };
 
-      const handleAddUnit = (studentId, subject, title, goal, startDate, endDate) => {
-        const newUnit = {
-          id: 'u_' + Date.now(),
-          studentId,
-          subject,
-          title,
-          goal,
-          startDate: startDate || new Date().toISOString().split('T')[0],
-          endDate: endDate || '',
-          evaluation: '',
-          status: '未作成'
-        };
-        setUnits(prev => [...prev, newUnit]);
-        return newUnit.id;
+      // 全児童共通の単元追加ハンドラー (確実なナビゲーションとモーダル統合)
+      const handleAddUnitToAllStudents = (subject, title, defaultGoal = '') => {
+        if (!title.trim()) return;
+        const trimmedTitle = title.trim();
+        const now = Date.now();
+        let targetUnitId = null;
+
+        setUnits(prevUnits => {
+          const updated = [...prevUnits];
+          students.forEach((st, idx) => {
+            const exists = updated.some(u => u.studentId === st.id && u.subject === subject && u.title === trimmedTitle);
+            if (!exists) {
+              const uId = `u_${now}_${idx}`;
+              const uObj = {
+                id: uId,
+                studentId: st.id,
+                subject,
+                title: trimmedTitle,
+                goal: st.id === nav.studentId ? defaultGoal : '',
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: '',
+                evaluation: '',
+                status: '未作成'
+              };
+              updated.push(uObj);
+              if (st.id === nav.studentId) {
+                targetUnitId = uId;
+              }
+            } else if (st.id === nav.studentId) {
+              const found = updated.find(u => u.studentId === st.id && u.subject === subject && u.title === trimmedTitle);
+              if (found) targetUnitId = found.id;
+            }
+          });
+          return updated;
+        });
+
+        setAddUnitSubjectTarget(null);
+
+        // 新設した単元の詳細画面へ移動
+        if (nav.studentId && targetUnitId) {
+          setNav({ view: 'unit', studentId: nav.studentId, subject, unitId: targetUnitId });
+        }
+      };
+
+      const handleRenameUnitAllStudents = (subject, oldTitle, newTitle) => {
+        if (!newTitle.trim() || oldTitle === newTitle.trim()) return;
+        const trimmedNewTitle = newTitle.trim();
+        setUnits(prev => prev.map(u => {
+          if (u.subject === subject && u.title === oldTitle) {
+            return { ...u, title: trimmedNewTitle };
+          }
+          return u;
+        }));
+        setRenameTarget(null);
       };
 
       const handleUpdateUnit = (updatedUnit) => {
@@ -244,30 +363,28 @@
           <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-emerald-100 mb-6 gap-3">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setNav({ view: 'top', studentId: null, subject: null, unitId: null })}>
               <div className="bg-emerald-500 text-white p-2.5 rounded-xl shadow-md flex items-center justify-center">
-                <i data-lucide="file-badge" className="w-6 h-6"></i>
+                <Icon name="file-badge" className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="font-bold text-lg text-slate-800 leading-tight">個別の指導計画 評価記録</h1>
-                <p className="text-xs text-slate-500">オフライン・ローカル保存版（完全端末内処理）</p>
+                <p className="text-xs text-slate-500">端末内完全処理版（ローカル保存）</p>
               </div>
             </div>
 
             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 flex-wrap">
-              {/* 保存ステータス */}
               {lastSavedTime && (
                 <div className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1">
-                  <i data-lucide="check" className="w-3.5 h-3.5 text-emerald-600"></i>
+                  <Icon name="check" className="w-3.5 h-3.5 text-emerald-600" />
                   <span>端末保存済 {lastSavedTime}</span>
                 </div>
               )}
 
-              {/* 共用PC用データ消去ボタン */}
               <button
                 onClick={handleClearAllLocalData}
                 className="bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1 text-xs shrink-0 border border-slate-300"
-                title="端末内の記憶データをクリア（離脱時推奨）"
+                title="端末内の記憶データをクリア"
               >
-                <i data-lucide="trash" className="w-3.5 h-3.5"></i>
+                <Icon name="trash" className="w-3.5 h-3.5" />
                 <span>データ全クリア</span>
               </button>
 
@@ -275,24 +392,24 @@
                 onClick={() => setShowQuickRecordModal(true)}
                 className="bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2.5 rounded-xl shadow border border-amber-400 transition-all flex items-center gap-2 active:scale-95 text-sm sm:text-base shrink-0"
               >
-                <i data-lucide="zap" className="w-5 h-5 fill-current"></i>
+                <Icon name="zap" className="w-5 h-5 fill-current" />
                 <span className="font-bold">今日の記録</span>
               </button>
             </div>
           </header>
 
-          {/* パンくずリストナビゲーション */}
+          {/* パンくずナビゲーション */}
           {nav.view !== 'top' && (
             <nav className="flex items-center gap-2 text-sm text-slate-600 mb-4 bg-white/80 p-2.5 rounded-xl border border-slate-200 shadow-2xs overflow-x-auto">
               <button 
                 onClick={() => setNav({ view: 'top', studentId: null, subject: null, unitId: null })}
                 className="hover:text-emerald-600 flex items-center gap-1 shrink-0 font-medium"
               >
-                <i data-lucide="home" className="w-4 h-4"></i> 児童一覧
+                <Icon name="home" className="w-4 h-4" /> 児童一覧
               </button>
               {currentStudent && (
                 <>
-                  <i data-lucide="chevron-right" className="w-4 h-4 text-slate-400 shrink-0"></i>
+                  <Icon name="chevron-right" className="w-4 h-4 text-slate-400 shrink-0" />
                   <button 
                     onClick={() => setNav({ view: 'student', studentId: currentStudent.id, subject: null, unitId: null })}
                     className={`hover:text-emerald-600 font-medium shrink-0 ${nav.view === 'student' ? 'text-emerald-700 font-bold' : ''}`}
@@ -303,20 +420,20 @@
               )}
               {nav.subject && (
                 <>
-                  <i data-lucide="chevron-right" className="w-4 h-4 text-slate-400 shrink-0"></i>
+                  <Icon name="chevron-right" className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="font-semibold text-slate-700 shrink-0">{nav.subject}</span>
                 </>
               )}
               {currentUnit && (
                 <>
-                  <i data-lucide="chevron-right" className="w-4 h-4 text-slate-400 shrink-0"></i>
+                  <Icon name="chevron-right" className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="font-bold text-emerald-800 truncate max-w-[150px] sm:max-w-[200px]">{currentUnit.title}</span>
                 </>
               )}
             </nav>
           )}
 
-          {/* メイン表示エリア */}
+          {/* 各画面のレンダリング */}
           {nav.view === 'top' && (
             <TopView 
               students={students} 
@@ -332,12 +449,10 @@
               units={units.filter(u => u.studentId === currentStudent.id)}
               onSelectUnit={(unitId, subject) => setNav({ view: 'unit', studentId: currentStudent.id, subject, unitId })}
               onAddUnit={(subject) => {
-                const title = prompt(`${subject} の新しい単元名を入力してください:`);
-                if (title) {
-                  const goal = prompt('個人目標を入力してください (後から変更可能):') || '';
-                  const newId = handleAddUnit(currentStudent.id, subject, title, goal);
-                  setNav({ view: 'unit', studentId: currentStudent.id, subject, unitId: newId });
-                }
+                setAddUnitSubjectTarget(subject);
+              }}
+              onTriggerRenameAll={(subject, title) => {
+                setRenameTarget({ subject, oldTitle: title });
               }}
               onOpenExport={() => {
                 setExportStudentId(currentStudent.id);
@@ -352,6 +467,7 @@
               student={currentStudent}
               logs={logs.filter(l => l.unitId === currentUnit.id)}
               onUpdateUnit={handleUpdateUnit}
+              onRenameUnitAll={handleRenameUnitAllStudents}
               onAddLog={(content, date) => handleAddLog(currentUnit.id, content, date)}
               onDeleteLog={handleDeleteLog}
               onUpdateLog={handleUpdateLog}
@@ -359,6 +475,15 @@
           )}
 
           {/* モーダル表示群 */}
+          {addUnitSubjectTarget && (
+            <AddUnitModal
+              subject={addUnitSubjectTarget}
+              studentName={currentStudent ? currentStudent.name : ''}
+              onClose={() => setAddUnitSubjectTarget(null)}
+              onSave={(subject, title, goal) => handleAddUnitToAllStudents(subject, title, goal)}
+            />
+          )}
+
           {showQuickRecordModal && (
             <QuickRecordModal 
               students={students}
@@ -370,8 +495,7 @@
                 setShowQuickRecordModal(false);
               }}
               onCreateUnitAndLog={(studentId, subject, title, goal, content, date) => {
-                const uId = handleAddUnit(studentId, subject, title, goal);
-                handleAddLog(uId, content, date);
+                handleAddUnitToAllStudents(subject, title, goal);
                 setShowQuickRecordModal(false);
               }}
             />
@@ -392,39 +516,47 @@
               onClose={() => setShowWordExportModal(false)}
             />
           )}
+
+          {renameTarget && (
+            <RenameUnitModal
+              subject={renameTarget.subject}
+              oldTitle={renameTarget.oldTitle}
+              onClose={() => setRenameTarget(null)}
+              onSave={(newTitle) => handleRenameUnitAllStudents(renameTarget.subject, renameTarget.oldTitle, newTitle)}
+            />
+          )}
         </div>
       );
     }
 
-    // --- 1. トップ画面（児童一覧） ---
     function TopView({ students, units, onSelectStudent, onOpenAddStudent }) {
       return (
         <div className="space-y-6">
           <div className="bg-emerald-600 text-white rounded-3xl p-6 shadow-lg relative overflow-hidden">
             <div className="absolute -right-6 -bottom-6 opacity-15 pointer-events-none">
-              <i data-lucide="shield-check" className="w-48 h-48"></i>
+              <Icon name="shield-check" className="w-48 h-48" />
             </div>
             <div className="relative z-10">
               <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-                <i data-lucide="smile" className="w-6 h-6"></i>
-                担当学級 児童一覧 (ローカル完結版)
+                <Icon name="smile" className="w-6 h-6" />
+                担当学級 児童一覧 (ローカル保存版)
               </h2>
               <p className="text-emerald-100 text-sm leading-relaxed max-w-lg">
-                データはお使いの端末（ブラウザ）内だけに保存されます。個人情報保護のため、実名ではなく「児童A」等の記号・イニシャル管理をおすすめします。
+                データはお使いの端末（ブラウザ）内だけに保存されます。実名ではなく「児童A」等のイニシャル管理を推奨します。単元名はクラス共通で管理されます。
               </p>
             </div>
           </div>
 
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
-              <i data-lucide="users" className="w-5 h-5 text-emerald-600"></i>
+              <Icon name="users" className="w-5 h-5 text-emerald-600" />
               登録児童 ({students.length}名)
             </h3>
             <button 
               onClick={onOpenAddStudent}
               className="bg-white hover:bg-emerald-50 text-emerald-700 font-bold border border-emerald-300 px-4 py-2 rounded-xl text-sm shadow-2xs flex items-center gap-1.5 transition-all"
             >
-              <i data-lucide="user-plus" className="w-4 h-4"></i>
+              <Icon name="user-plus" className="w-4 h-4" />
               新しい児童を登録
             </button>
           </div>
@@ -458,7 +590,7 @@
                           <p className="text-xs text-slate-500">登録単元数: {studentUnits.length}件</p>
                         </div>
                       </div>
-                      <i data-lucide="chevron-right" className="w-6 h-6 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all"></i>
+                      <Icon name="chevron-right" className="w-6 h-6 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
                     </div>
 
                     <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -480,11 +612,9 @@
       );
     }
 
-    // --- 2. 児童詳細画面（8教科一覧） ---
-    function StudentDetailView({ student, units, onSelectUnit, onAddUnit, onOpenExport }) {
+    function StudentDetailView({ student, units, onSelectUnit, onAddUnit, onTriggerRenameAll, onOpenExport }) {
       return (
         <div className="space-y-6">
-          {/* 児童ヘッダー情報 */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-emerald-500 text-white font-bold rounded-2xl flex items-center justify-center text-2xl shadow-md">
@@ -500,17 +630,16 @@
               onClick={onOpenExport}
               className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-3 rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-95"
             >
-              <i data-lucide="file-text" className="w-5 h-5"></i>
+              <Icon name="file-text" className="w-5 h-5" />
               <span>個別の指導計画を出力 (Word)</span>
             </button>
           </div>
 
           <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
-            <i data-lucide="book" className="w-5 h-5 text-emerald-600"></i>
+            <Icon name="book" className="w-5 h-5 text-emerald-600" />
             教科・領域一覧
           </h3>
 
-          {/* 8教科グリッド */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {SUBJECTS.map(subject => {
               const subjectUnits = units.filter(u => u.subject === subject);
@@ -520,8 +649,8 @@
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className={`p-2 rounded-xl text-xs font-bold border ${SUBJECT_COLORS[subject]}`}>
-                          <i data-lucide={SUBJECT_ICONS[subject]} className="w-4 h-4 inline-block mr-1"></i>
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1 ${SUBJECT_COLORS[subject]}`}>
+                          <Icon name={SUBJECT_ICONS[subject]} className="w-3.5 h-3.5" />
                           {subject}
                         </span>
                       </div>
@@ -529,12 +658,11 @@
                         onClick={() => onAddUnit(subject)}
                         className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 border border-emerald-200"
                       >
-                        <i data-lucide="plus" className="w-3.5 h-3.5"></i>
+                        <Icon name="plus" className="w-3.5 h-3.5" />
                         単元を追加
                       </button>
                     </div>
 
-                    {/* 単元リスト */}
                     {subjectUnits.length === 0 ? (
                       <div className="py-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                         単元がまだ登録されていません
@@ -543,11 +671,13 @@
                       <div className="space-y-2">
                         {subjectUnits.map(unit => (
                           <div 
-                            key={unit.id} 
-                            onClick={() => onSelectUnit(unit.id, subject)}
-                            className="p-3 bg-slate-50 hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-xl cursor-pointer transition-all flex items-start justify-between gap-2 group"
+                            key={unit.id}
+                            className="p-3 bg-slate-50 hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all flex items-start justify-between gap-2 group"
                           >
-                            <div className="space-y-1">
+                            <div 
+                              onClick={() => onSelectUnit(unit.id, subject)}
+                              className="space-y-1 flex-1 cursor-pointer"
+                            >
                               <div className="font-bold text-sm text-slate-800 group-hover:text-emerald-700">
                                 {unit.title}
                               </div>
@@ -558,14 +688,27 @@
                               )}
                             </div>
 
-                            {/* ステータスバッジ */}
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${
-                              unit.status === '確定' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                              unit.status === '下書き' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                              'bg-slate-200 text-slate-600 border-slate-300'
-                            }`}>
-                              {unit.status}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTriggerRenameAll(subject, unit.title);
+                                }}
+                                className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 bg-white hover:bg-emerald-100 px-2 py-1 rounded-lg border border-slate-200 hover:border-emerald-300 transition-all flex items-center gap-1 shadow-2xs"
+                                title="全児童の同教科の単元名が一括で変更されます"
+                              >
+                                <Icon name="edit-3" className="w-3 h-3 text-emerald-600" />
+                                <span>一括変更</span>
+                              </button>
+
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                unit.status === '確定' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                unit.status === '下書き' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                'bg-slate-200 text-slate-600 border-slate-300'
+                              }`}>
+                                {unit.status}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -579,19 +722,19 @@
       );
     }
 
-    // --- 3. 単元・日々の記録・AI評価生成画面 ---
-    function UnitDetailView({ unit, student, logs, onUpdateUnit, onAddLog, onDeleteLog, onUpdateLog }) {
+    function UnitDetailView({ unit, student, logs, onUpdateUnit, onRenameUnitAll, onAddLog, onDeleteLog, onUpdateLog }) {
       const [goalInput, setGoalInput] = useState(unit.goal || '');
       const [isEditingGoal, setIsEditingGoal] = useState(!unit.goal);
+      const [isEditingUnitTitle, setIsEditingUnitTitle] = useState(false);
+      const [unitTitleInput, setUnitTitleInput] = useState(unit.title);
+
       const [logInput, setLogInput] = useState('');
       const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
 
-      // AI評価文用ステータス
       const [aiEvaluation, setAiEvaluation] = useState(unit.evaluation || '');
       const [isGenerating, setIsGenerating] = useState(false);
       const [isEditingEval, setIsEditingEval] = useState(false);
 
-      // 編集用Logステータス
       const [editingLogId, setEditingLogId] = useState(null);
       const [editLogContent, setEditLogContent] = useState('');
       const [editLogDate, setEditLogDate] = useState('');
@@ -599,7 +742,14 @@
       useEffect(() => {
         setGoalInput(unit.goal || '');
         setAiEvaluation(unit.evaluation || '');
-      }, [unit.id]);
+        setUnitTitleInput(unit.title);
+      }, [unit.id, unit.title]);
+
+      const handleSaveUnitTitle = () => {
+        if (!unitTitleInput.trim()) return;
+        onRenameUnitAll(unit.subject, unit.title, unitTitleInput.trim());
+        setIsEditingUnitTitle(false);
+      };
 
       const handleEvalChange = (e) => {
         const newVal = e.target.value;
@@ -619,7 +769,6 @@
         setLogInput('');
       };
 
-      // AI評価文作成関数（敬体指定）
       const handleGenerateAIEvaluation = async () => {
         if (logs.length === 0) {
           alert('日々の記録がありません。評価文を作成するにはまず日々の記録を入力してください。');
@@ -694,14 +843,13 @@ ${logsText}
 
       return (
         <div className="space-y-6">
-          {/* 単元情報カード */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className={`px-3 py-1 rounded-xl text-xs font-bold border ${SUBJECT_COLORS[unit.subject]}`}>
                   {unit.subject}
                 </span>
-                <span className="text-xs text-slate-500">{student.name}</span>
+                <span className="text-xs text-slate-500 font-bold">{student.name}</span>
               </div>
               <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
                 unit.status === '確定' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
@@ -713,22 +861,65 @@ ${logsText}
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">{unit.title}</h2>
+              {isEditingUnitTitle ? (
+                <div className="space-y-3 bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-300 shadow-xs">
+                  <div className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                    <Icon name="info" className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>単元名の変更は【全児童の「{unit.subject}」教科】に一括適用されます</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <input
+                      type="text"
+                      value={unitTitleInput}
+                      onChange={(e) => setUnitTitleInput(e.target.value)}
+                      className="p-3 bg-white border border-emerald-400 rounded-xl text-base font-bold w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                      placeholder="単元名を入力..."
+                      autoFocus
+                    />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={handleSaveUnitTitle}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-3 rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5"
+                      >
+                        <Icon name="check" className="w-4 h-4" />
+                        全児童に一括適用
+                      </button>
+                      <button
+                        onClick={() => { setUnitTitleInput(unit.title); setIsEditingUnitTitle(false); }}
+                        className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-3 rounded-xl text-xs transition-all"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <h2 className="text-2xl font-bold text-slate-800">{unit.title}</h2>
+                  <button 
+                    onClick={() => { setUnitTitleInput(unit.title); setIsEditingUnitTitle(true); }}
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                    title="全児童の同教科の単元名が一括で更新されます"
+                  >
+                    <Icon name="edit-3" className="w-4 h-4 text-emerald-600" />
+                    <span>単元名を全児童一括変更</span>
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* 個人目標エリア */}
             <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
-                  <i data-lucide="target" className="w-4 h-4 text-emerald-600"></i>
-                  個人目標
+                  <Icon name="target" className="w-4 h-4 text-emerald-600" />
+                  個人目標 ({student.name}個別)
                 </h3>
                 {!isEditingGoal && (
                   <button 
                     onClick={() => setIsEditingGoal(true)}
                     className="text-xs text-emerald-700 hover:underline flex items-center gap-1 font-medium"
                   >
-                    <i data-lucide="edit-2" className="w-3.5 h-3.5"></i> 編集
+                    <Icon name="edit-2" className="w-3.5 h-3.5" /> 編集
                   </button>
                 )}
               </div>
@@ -757,17 +948,16 @@ ${logsText}
             </div>
           </div>
 
-          {/* 日々の記録（入力 UI） */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-              <i data-lucide="pen-tool" className="w-5 h-5 text-amber-500"></i>
+              <Icon name="pen-tool" className="w-5 h-5 text-amber-500" />
               日々の記録を追加
             </h3>
 
             <form onSubmit={handleAddRecord} className="space-y-3">
               <div className="flex items-center gap-3">
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1 shrink-0">
-                  <i data-lucide="calendar" className="w-4 h-4"></i> 日付
+                  <Icon name="calendar" className="w-4 h-4" /> 日付
                 </label>
                 <input 
                   type="date"
@@ -780,7 +970,7 @@ ${logsText}
               <textarea
                 value={logInput}
                 onChange={(e) => setLogInput(e.target.value)}
-                placeholder="授業や活動中の様子を入力してください... (個人情報の観点から、児童の本名は書かず『児童』や『Aさん』等の表現を推奨します)"
+                placeholder="授業や活動中の様子を入力してください..."
                 className="w-full p-4 bg-slate-50 border border-slate-300 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[100px]"
               ></textarea>
 
@@ -790,13 +980,12 @@ ${logsText}
                   disabled={!logInput.trim()}
                   className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-2xl shadow border border-amber-400 transition-all flex items-center gap-2 active:scale-95 text-base"
                 >
-                  <i data-lucide="save" className="w-5 h-5"></i>
+                  <Icon name="save" className="w-5 h-5" />
                   <span>記録を保存</span>
                 </button>
               </div>
             </form>
 
-            {/* 記録一覧 */}
             <div className="pt-4 border-t border-slate-100">
               <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between">
                 <span>記録の履歴 ({logs.length}件)</span>
@@ -859,7 +1048,7 @@ ${logsText}
                                 className="text-slate-400 hover:text-emerald-600 p-1"
                                 title="編集"
                               >
-                                <i data-lucide="edit-3" className="w-4 h-4"></i>
+                                <Icon name="edit-3" className="w-4 h-4" />
                               </button>
                               <button 
                                 onClick={() => {
@@ -870,7 +1059,7 @@ ${logsText}
                                 className="text-slate-400 hover:text-rose-600 p-1"
                                 title="削除"
                               >
-                                <i data-lucide="trash-2" className="w-4 h-4"></i>
+                                <Icon name="trash-2" className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
@@ -886,15 +1075,14 @@ ${logsText}
             </div>
           </div>
 
-          {/* AI評価生成セクション */}
           <div className="bg-gradient-to-br from-white to-emerald-50/40 border border-emerald-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                  <i data-lucide="sparkles" className="w-5 h-5 text-emerald-600"></i>
-                  個別の指導計画 評価文の作成（敬体・自動保存）
+                  <Icon name="sparkles" className="w-5 h-5 text-emerald-600" />
+                  個別の指導計画 評価文の作成（敬体）
                 </h3>
-                <p className="text-xs text-slate-500">日々の記録を基に、敬体（です・ます調）で整えた評価文をAIが下書きします。</p>
+                <p className="text-xs text-slate-500">日々の記録を基に、敬体（です・ます調）で整えた評価文をAIが作成します。</p>
               </div>
 
               <button
@@ -904,19 +1092,18 @@ ${logsText}
               >
                 {isGenerating ? (
                   <>
-                    <i data-lucide="loader" className="w-5 h-5 animate-spin"></i>
+                    <Icon name="loader" className="w-5 h-5 animate-spin" />
                     <span>AI作成中...</span>
                   </>
                 ) : (
                   <>
-                    <i data-lucide="bot" className="w-5 h-5"></i>
+                    <Icon name="bot" className="w-5 h-5" />
                     <span>{aiEvaluation ? '敬体でAI評価文を再生成' : '敬体でAI評価文を生成'}</span>
                   </>
                 )}
               </button>
             </div>
 
-            {/* 生成テキスト表示 & 編集エリア */}
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                 <span>評価文内容 ({aiEvaluation.length} 文字)</span>
@@ -927,7 +1114,7 @@ ${logsText}
                 <textarea
                   value={aiEvaluation}
                   onChange={handleEvalChange}
-                  placeholder="「AI評価文を生成」ボタンを押すか、直接入力してください。（入力した文章は端末に自動保存されます）"
+                  placeholder="「AI評価文を生成」ボタンを押すか、直接入力してください。"
                   className="w-full p-4 bg-white border border-emerald-300 rounded-2xl text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[140px]"
                 ></textarea>
               ) : (
@@ -936,7 +1123,6 @@ ${logsText}
                 </div>
               )}
 
-              {/* ボタン操作 */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 <div>
                   {!isEditingEval && aiEvaluation && (
@@ -944,7 +1130,7 @@ ${logsText}
                       onClick={() => setIsEditingEval(true)}
                       className="text-xs text-emerald-800 hover:underline flex items-center gap-1 font-bold bg-white px-3 py-1.5 rounded-xl border border-emerald-200"
                     >
-                      <i data-lucide="edit-2" className="w-3.5 h-3.5"></i> 文章を直接編集
+                      <Icon name="edit-2" className="w-3.5 h-3.5" /> 文章を直接編集
                     </button>
                   )}
                 </div>
@@ -960,7 +1146,7 @@ ${logsText}
                     onClick={() => handleSaveEvaluationStatus('確定')}
                     className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-xs transition-all flex items-center gap-1"
                   >
-                    <i data-lucide="check-circle" className="w-4 h-4"></i>
+                    <Icon name="check-circle" className="w-4 h-4" />
                     評価を確定する
                   </button>
                 </div>
@@ -971,7 +1157,155 @@ ${logsText}
       );
     }
 
-    // --- モーダル1: クイック記録追加モーダル ---
+    // --- モーダル: 単元追加 (新規追加) ---
+    function AddUnitModal({ subject, studentName, onClose, onSave }) {
+      const [title, setTitle] = useState('');
+      const [goal, setGoal] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!title.trim()) return;
+        onSave(subject, title.trim(), goal.trim());
+      };
+
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <Icon name="plus" className="w-5 h-5 text-emerald-600" />
+                新しい単元の追加
+              </h3>
+              <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400">
+                <Icon name="x" className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100 text-xs text-emerald-900 space-y-1">
+              <p className="font-bold">【対象教科】 {subject}</p>
+              <p className="text-slate-600 pt-0.5">
+                ※ この単元はクラス全児童の「{subject}」に共通登録されます。
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  単元名 <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="例: ひらがなを読もう"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-base font-bold focus:ring-2 focus:ring-emerald-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  【{studentName}】の個人目標 (任意・後から編集可能)
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="例: 教師と一緒にカードを見て声を出しながら発音することができる。"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500"
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2.5 rounded-xl text-slate-600 bg-slate-100 font-bold text-xs"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={!title.trim()}
+                  className="px-5 py-2.5 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 font-bold text-xs shadow-xs transition-all flex items-center gap-1"
+                >
+                  <Icon name="check" className="w-4 h-4" />
+                  <span>全児童分を作成</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- モーダル: 単元名一括変更 ---
+    function RenameUnitModal({ subject, oldTitle, onClose, onSave }) {
+      const [newTitle, setNewTitle] = useState(oldTitle);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!newTitle.trim() || newTitle.trim() === oldTitle) return;
+        onSave(newTitle.trim());
+      };
+
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <Icon name="edit-3" className="w-5 h-5 text-emerald-600" />
+                単元名の一括変更
+              </h3>
+              <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400">
+                <Icon name="x" className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100 text-xs text-emerald-900 space-y-1">
+              <p className="font-bold">【対象教科】 {subject}</p>
+              <p>変更前の単元名: <span className="font-bold">{oldTitle}</span></p>
+              <p className="text-slate-600 pt-1 border-t border-emerald-200/60">
+                ※ この操作により、クラス内の全児童の「{subject}」にある単元「{oldTitle}」の名称が一括更新されます。
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">新しい単元名</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-base font-bold focus:ring-2 focus:ring-emerald-500"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2.5 rounded-xl text-slate-600 bg-slate-100 font-bold text-xs"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newTitle.trim() || newTitle.trim() === oldTitle}
+                  className="px-5 py-2.5 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 font-bold text-xs shadow-xs transition-all flex items-center gap-1"
+                >
+                  <Icon name="refresh-cw" className="w-4 h-4" />
+                  <span>全児童分を一括変更</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- モーダル: クイック記録追加 ---
     function QuickRecordModal({ students, units, subjects, onClose, onSaveLog, onCreateUnitAndLog }) {
       const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
       const [selectedSubject, setSelectedSubject] = useState(subjects[0]);
@@ -1011,11 +1345,11 @@ ${logsText}
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                <i data-lucide="zap" className="w-5 h-5 text-amber-500 fill-current"></i>
+                <Icon name="zap" className="w-5 h-5 text-amber-500 fill-current" />
                 今日の記録を追加
               </h3>
               <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400">
-                <i data-lucide="x" className="w-5 h-5"></i>
+                <Icon name="x" className="w-5 h-5" />
               </button>
             </div>
 
@@ -1063,7 +1397,7 @@ ${logsText}
                   {availableUnits.map(u => (
                     <option key={u.id} value={u.id}>{u.title}</option>
                   ))}
-                  <option value="new">＋ 新しい単元を作成して記録する</option>
+                  <option value="new">＋ 全児童共通の新しい単元を作成して記録する</option>
                 </select>
               </div>
 
@@ -1071,14 +1405,14 @@ ${logsText}
                 <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
                   <input
                     type="text"
-                    placeholder="新単元名 (例: ひらがなを読もう)"
+                    placeholder="新単元名 (全児童の同教科に登録されます)"
                     value={newUnitTitle}
                     onChange={(e) => setNewUnitTitle(e.target.value)}
-                    className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-sm"
+                    className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-sm font-bold"
                   />
                   <input
                     type="text"
-                    placeholder="個人目標 (任意)"
+                    placeholder="選択児童の個人目標 (任意)"
                     value={newUnitGoal}
                     onChange={(e) => setNewUnitGoal(e.target.value)}
                     className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-xs"
@@ -1128,7 +1462,7 @@ ${logsText}
       );
     }
 
-    // --- モーダル2: 児童追加モーダル ---
+    // --- モーダル: 児童追加 ---
     function AddStudentModal({ onClose, onAdd }) {
       const [name, setName] = useState('');
 
@@ -1137,7 +1471,7 @@ ${logsText}
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
             <h3 className="font-bold text-lg text-slate-800">児童の新規登録</h3>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">表示用名称（実名は避け『児童A』などを強く推薦）</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">表示用名称（イニシャル・仮名を推奨）</label>
               <input
                 type="text"
                 placeholder="例: 児童A"
@@ -1167,7 +1501,7 @@ ${logsText}
       );
     }
 
-    // --- モーダル3: 個別の指導計画 Word (.docx) 出力モーダル ---
+    // --- モーダル: Word 出力 ---
     function WordExportModal({ student, units, subjects, onClose }) {
       const [onlyConfirmed, setOnlyConfirmed] = useState(true);
       const [isExporting, setIsExporting] = useState(false);
@@ -1301,11 +1635,11 @@ ${logsText}
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                <i data-lucide="file-text" className="w-5 h-5 text-emerald-600"></i>
+                <Icon name="file-text" className="w-5 h-5 text-emerald-600" />
                 個別の指導計画 出力 (Word)
               </h3>
               <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400">
-                <i data-lucide="x" className="w-5 h-5"></i>
+                <Icon name="x" className="w-5 h-5" />
               </button>
             </div>
 
@@ -1325,7 +1659,6 @@ ${logsText}
               </label>
             </div>
 
-            {/* プレビュー表示 */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-500 uppercase">出力内容プレビュー</h4>
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 max-h-[260px] overflow-y-auto custom-scrollbar text-xs space-y-3">
@@ -1365,7 +1698,7 @@ ${logsText}
                 disabled={isExporting}
                 className="px-6 py-2.5 rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 font-bold text-xs shadow-md flex items-center gap-2 active:scale-95"
               >
-                <i data-lucide="download" className="w-4 h-4"></i>
+                <Icon name="download" className="w-4 h-4" />
                 <span>{isExporting ? '生成中...' : 'Word (.docx) をダウンロード'}</span>
               </button>
             </div>
