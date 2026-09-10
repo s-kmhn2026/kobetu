@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個別の指導計画 評価記録アプリ</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- docx.js for Word Generation -->
+  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Zen Maru Gothic', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8faf9;
+      color: #334155;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-emerald-50/30 min-h-screen pb-12">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- 定数定義 ---
+    const SUBJECTS = ['生活', '国語', '算数', '図画工作', '音楽', '体育', '特別活動', '自立活動'];
+
+    const SUBJECT_COLORS = {
+      '生活': 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200',
+      '国語': 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200',
+      '算数': 'bg-sky-100 text-sky-800 border-sky-300 hover:bg-sky-200',
+      '図画工作': 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200',
+      '音楽': 'bg-pink-100 text-pink-800 border-pink-300 hover:bg-pink-200',
+      '体育': 'bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200',
+      '特別活動': 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200',
+      '自立活動': 'bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200'
+    };
+
+    const SUBJECT_ICONS = {
+      '生活': 'sun',
+      '国語': 'book-open',
+      '算数': 'calculator',
+      '図画工作': 'palette',
+      '音楽': 'music',
+      '体育': 'activity',
+      '特別活動': 'users',
+      '自立活動': 'heart'
+    };
+
+    // 初期デモデータ（実名ではなく仮名・記号での利用を推奨）
+    const INITIAL_STUDENTS = [
+      { id: 's1', name: '児童A' },
+      { id: 's2', name: '児童B' }
+    ];
+
+    const INITIAL_UNITS = [
+      {
+        id: 'u1',
+        studentId: 's1',
+        subject: '国語',
+        title: 'ひらがなを読もう',
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+        goal: '教師と一緒に、ひらがなカードを見て声を出しながら発音することができる。',
+        evaluation: '教師の促しを受けながら、ひらがなカードを声に出して読むことに意欲的に取り組みました。支援を受けながら正確に読む場面が増え、自分の名前の文字を自発的に指さして声に出す様子も見られました。今後も繰り返し学習を継続していきます。',
+        status: '確定'
+      },
+      {
+        id: 'u2',
+        studentId: 's1',
+        subject: '生活',
+        title: 'あさのしたくをしよう',
+        startDate: '2026-09-01',
+        endDate: '',
+        goal: '手順表を見ながら、自分の持ち物をロッカーに片付けることができる。',
+        evaluation: '',
+        status: '未作成'
+      }
+    ];
+
+    const INITIAL_LOGS = [
+      {
+        id: 'l1',
+        unitId: 'u1',
+        date: '2026-09-02',
+        content: '「あ」「い」「う」のカードを提示すると、教師の口元をしっかり見て真似して発音することができました。'
+      },
+      {
+        id: 'l2',
+        unitId: 'u1',
+        date: '2026-09-08',
+        content: '自分の名前の最初の文字のカードを見せると、自分から嬉しそうに「あ！」と声に出せました。友達の発表中も集中していました。'
+      },
+      {
+        id: 'l3',
+        unitId: 'u2',
+        date: '2026-09-10',
+        content: 'ランドセルから連絡袋を出す際、手順表の1番目を指さしながら一人で行うことができました。帽子は教師の声かけで片付けました。'
+      }
+    ];
+
+    // --- メインコンポーネント ---
+    function App() {
+      const [students, setStudents] = useState(() => {
+        const saved = localStorage.getItem('sp_students');
+        return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+      });
+
+      const [units, setUnits] = useState(() => {
+        const saved = localStorage.getItem('sp_units');
+        return saved ? JSON.parse(saved) : INITIAL_UNITS;
+      });
+
+      const [logs, setLogs] = useState(() => {
+        const saved = localStorage.getItem('sp_logs');
+        return saved ? JSON.parse(saved) : INITIAL_LOGS;
+      });
+
+      // 自動保存インジケーター用状態
+      const [lastSavedTime, setLastSavedTime] = useState(null);
+
+      // 画面ナビゲーション状態
+      const [nav, setNav] = useState({ view: 'top', studentId: null, subject: null, unitId: null });
+
+      // モーダル管理
+      const [showQuickRecordModal, setShowQuickRecordModal] = useState(false);
+      const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+      const [showWordExportModal, setShowWordExportModal] = useState(false);
+      const [exportStudentId, setExportStudentId] = useState(null);
+
+      // データの自動保存 (ブラウザの localStorage のみ使用)
+      useEffect(() => {
+        localStorage.setItem('sp_students', JSON.stringify(students));
+        setLastSavedTime(new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }, [students]);
+
+      useEffect(() => {
+        localStorage.setItem('sp_units', JSON.stringify(units));
+        setLastSavedTime(new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }, [units]);
+
+      useEffect(() => {
+        localStorage.setItem('sp_logs', JSON.stringify(logs));
+        setLastSavedTime(new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }, [logs]);
+
+      // 共用PC対策：端末内ローカルデータの消去（ログアウト相当）
+      const handleClearAllLocalData = () => {
+        if (confirm('【端末内データの完全消去】\nブラウザに保存されているすべての児童データ・記録を消去します。\n共用PCでの利用終了時やデータリセット時に実行してください。本当に消去しますか？')) {
+          localStorage.removeItem('sp_students');
+          localStorage.removeItem('sp_units');
+          localStorage.removeItem('sp_logs');
+          setStudents([]);
+          setUnits([]);
+          setLogs([]);
+          setNav({ view: 'top', studentId: null, subject: null, unitId: null });
+          alert('端末内のデータをすべて消去しました。');
+        }
+      };
+
+      // Lucide アイコンレンダリング
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      // --- ハンドラー関数 ---
+      const handleAddStudent = (name) => {
+        if (!name.trim()) return;
+        const newStudent = { id: 's_' + Date.now(), name: name.trim() };
+        setStudents(prev => [...prev, newStudent]);
+        setShowAddStudentModal(false);
+      };
+
+      const handleAddUnit = (studentId, subject, title, goal, startDate, endDate) => {
+        const newUnit = {
+          id: 'u_' + Date.now(),
+          studentId,
+          subject,
+          title,
+          goal,
+          startDate: startDate || new Date().toISOString().split('T')[0],
+          endDate: endDate || '',
+          evaluation: '',
+          status: '未作成'
+        };
+        setUnits(prev => [...prev, newUnit]);
+        return newUnit.id;
+      };
+
+      const handleUpdateUnit = (updatedUnit) => {
+        setUnits(prev => prev.map(u => u.id === updatedUnit.id ? updatedUnit : u));
+      };
+
+      const handleAddLog = (unitId, content, date) => {
+        const newLog = {
+          id: 'l_' + Date.now(),
+          unitId,
+          date: date || new Date().toISOString().split('T')[0],
+          content
+        };
+        setLogs(prev => [newLog, ...prev]);
+      };
+
+      const handleDeleteLog = (logId) => {
+        setLogs(prev => prev.filter(l => l.id !== logId));
+      };
+
+      const handleUpdateLog = (logId, newContent, newDate) => {
+        setLogs(prev => prev.map(l => l.id === logId ? { ...l, content: newContent, date: newDate } : l));
+      };
+
+      const currentStudent = students.find(s => s.id === nav.studentId);
+      const currentUnit = units.find(u => u.id === nav.unitId);
+
+      return (
+        <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6">
+          {/* ヘッダー */}
+          <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-emerald-100 mb-6 gap-3">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setNav({ view: 'top', studentId: null, subject: null, unitId: null })}>
+              <div className="bg-emerald-500 text-white p-2.5 rounded-xl shadow-md flex items-center justify-center">
+                <i data-lucide="file-badge" className="w-6 h-6"></i>
+              </div>
+              <div>
+                <h1 className="font-bold text-lg text-slate-800 leading-tight">個別の指導計画 評価記録</h1>
+                <p className="text-xs text-slate-500">オフライン・ローカル保存版（完全端末内処理）</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 flex-wrap">
+              {/* 保存ステータス */}
+              {lastSavedTime && (
+                <div className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1">
+                  <i data-lucide="check" className="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>端末保存済 {lastSavedTime}</span>
+                </div>
+              )}
+
+              {/* 共用PC用データ消去ボタン */}
+              <button
+                onClick={handleClearAllLocalData}
+                className="bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1 text-xs shrink-0 border border-slate-300"
+                title="端末内の記憶データをクリア（離脱時推奨）"
+              >
+                <i data-lucide="trash" className="w-3.5 h-3.5"></i>
+                <span>データ全クリア</span>
+              </button>
+
+              <button
+                onClick={() => setShowQuickRecordModal(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2.5 rounded-xl shadow border border-amber-400 transition-all flex items-center gap-2 active:scale-95 text-sm sm:text-base shrink-0"
+              >
+                <i data-lucide="zap" className="w-5 h-5 fill-current"></i>
+                <span className="font-bold">今日の記録</span>
+              </button>
+            </div>
+          </header>
+
+          {/* パンくずリストナビゲーション */}
+          {nav.view !== 'top' && (
+            <nav className="flex items-center gap-2 text-sm text-slate-600 mb-4 bg-white/80 p-2.5 rounded-xl border border-slate-200 shadow-2xs overflow-x-auto">
+              <button 
+                onClick={() => setNav({ view: 'top', studentId: null, subject: null, unitId: null })}
+                className="hover:text-emerald-600 flex items-center gap-1 shrink-0 font-medium"
+              >
+                <i data-lucide="home" className="w-4 h-4"></i> 児童一覧
+              </button>
+              {currentStudent && (
+                <>
+                  <i data-lucide="chevron-right" className="w-4 h-4 text-slate-400 shrink-0"></i>
+                  <button 
+                    onClick={() => setNav({ view: 'student', studentId: currentStudent.id, subject: null, unitId: null })}
+                    className={`hover:text-emerald-600 font-medium shrink-0 ${nav.view === 'student' ? 'text-emerald-700 font-bold' : ''}`}
+                  >
+                    {currentStudent.name}
+                  </button>
+                </>
+              )}
+              {nav.subject && (
+                <>
+                  <i data-lucide="chevron-right" className="w-4 h-4 text-slate-400 shrink-0"></i>
+                  <span className="font-semibold text-slate-700 shrink-0">{nav.subject}</span>
+                </>
+              )}
+              {currentUnit && (
+                <>
+                  <i data-lucide="chevron-right" className="w-4 h-4 text-slate-400 shrink-0"></i>
+                  <span className="font-bold text-emerald-800 truncate max-w-[150px] sm:max-w-[200px]">{currentUnit.title}</span>
+                </>
+              )}
+            </nav>
+          )}
+
+          {/* メイン表示エリア */}
+          {nav.view === 'top' && (
+            <TopView 
+              students={students} 
+              units={units}
+              onSelectStudent={(id) => setNav({ view: 'student', studentId: id, subject: null, unitId: null })}
+              onOpenAddStudent={() => setShowAddStudentModal(true)}
+            />
+          )}
+
+          {nav.view === 'student' && currentStudent && (
+            <StudentDetailView 
+              student={currentStudent}
+              units={units.filter(u => u.studentId === currentStudent.id)}
+              onSelectUnit={(unitId, subject) => setNav({ view: 'unit', studentId: currentStudent.id, subject, unitId })}
+              onAddUnit={(subject) => {
+                const title = prompt(`${subject} の新しい単元名を入力してください:`);
+                if (title) {
+                  const goal = prompt('個人目標を入力してください (後から変更可能):') || '';
+                  const newId = handleAddUnit(currentStudent.id, subject, title, goal);
+                  setNav({ view: 'unit', studentId: currentStudent.id, subject, unitId: newId });
+                }
+              }}
+              onOpenExport={() => {
+                setExportStudentId(currentStudent.id);
+                setShowWordExportModal(true);
+              }}
+            />
+          )}
+
+          {nav.view === 'unit' && currentUnit && (
+            <UnitDetailView 
+              unit={currentUnit}
+              student={currentStudent}
+              logs={logs.filter(l => l.unitId === currentUnit.id)}
+              onUpdateUnit={handleUpdateUnit}
+              onAddLog={(content, date) => handleAddLog(currentUnit.id, content, date)}
+              onDeleteLog={handleDeleteLog}
+              onUpdateLog={handleUpdateLog}
+            />
+          )}
+
+          {/* モーダル表示群 */}
+          {showQuickRecordModal && (
+            <QuickRecordModal 
+              students={students}
+              units={units}
+              subjects={SUBJECTS}
+              onClose={() => setShowQuickRecordModal(false)}
+              onSaveLog={(unitId, content, date) => {
+                handleAddLog(unitId, content, date);
+                setShowQuickRecordModal(false);
+              }}
+              onCreateUnitAndLog={(studentId, subject, title, goal, content, date) => {
+                const uId = handleAddUnit(studentId, subject, title, goal);
+                handleAddLog(uId, content, date);
+                setShowQuickRecordModal(false);
+              }}
+            />
+          )}
+
+          {showAddStudentModal && (
+            <AddStudentModal 
+              onClose={() => setShowAddStudentModal(false)}
+              onAdd={handleAddStudent}
+            />
+          )}
+
+          {showWordExportModal && exportStudentId && (
+            <WordExportModal 
+              student={students.find(s => s.id === exportStudentId)}
+              units={units.filter(u => u.studentId === exportStudentId)}
+              subjects={SUBJECTS}
+              onClose={() => setShowWordExportModal(false)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // --- 1. トップ画面（児童一覧） ---
+    function TopView({ students, units, onSelectStudent, onOpenAddStudent }) {
+      return (
+        <div className="space-y-6">
+          <div className="bg-emerald-600 text-white rounded-3xl p-6 shadow-lg relative overflow-hidden">
+            <div className="absolute -right-6 -bottom-6 opacity-15 pointer-events-none">
+              <i data-lucide="shield-check" className="w-48 h-48"></i>
+            </div>
+            <div className="relative z-10">
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                <i data-lucide="smile" className="w-6 h-6"></i>
+                担当学級 児童一覧 (ローカル完結版)
+              </h2>
+              <p className="text-emerald-100 text-sm leading-relaxed max-w-lg">
+                データはお使いの端末（ブラウザ）内だけに保存されます。個人情報保護のため、実名ではなく「児童A」等の記号・イニシャル管理をおすすめします。
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
+              <i data-lucide="users" className="w-5 h-5 text-emerald-600"></i>
+              登録児童 ({students.length}名)
+            </h3>
+            <button 
+              onClick={onOpenAddStudent}
+              className="bg-white hover:bg-emerald-50 text-emerald-700 font-bold border border-emerald-300 px-4 py-2 rounded-xl text-sm shadow-2xs flex items-center gap-1.5 transition-all"
+            >
+              <i data-lucide="user-plus" className="w-4 h-4"></i>
+              新しい児童を登録
+            </button>
+          </div>
+
+          {students.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">
+              <p className="text-slate-500 font-medium">登録されている児童がいません。「新しい児童を登録」から追加してください。</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {students.map(student => {
+                const studentUnits = units.filter(u => u.studentId === student.id);
+                const confirmedCount = studentUnits.filter(u => u.status === '確定').length;
+                const draftCount = studentUnits.filter(u => u.status === '下書き').length;
+
+                return (
+                  <div 
+                    key={student.id}
+                    onClick={() => onSelectStudent(student.id)}
+                    className="bg-white hover:bg-emerald-50/40 border border-slate-200 hover:border-emerald-300 rounded-2xl p-5 shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-emerald-100 text-emerald-800 font-bold rounded-2xl flex items-center justify-center text-xl shadow-2xs group-hover:scale-105 transition-transform">
+                          {student.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-lg text-slate-800 group-hover:text-emerald-700 transition-colors">
+                            {student.name}
+                          </h4>
+                          <p className="text-xs text-slate-500">登録単元数: {studentUnits.length}件</p>
+                        </div>
+                      </div>
+                      <i data-lucide="chevron-right" className="w-6 h-6 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all"></i>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                      <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1.5">
+                        <span>指導計画 評価作成状況</span>
+                        <span>確定 {confirmedCount} / 下書き {draftCount}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                        <div className="bg-emerald-500 h-2" style={{ width: `${studentUnits.length ? (confirmedCount / 8) * 100 : 0}%` }}></div>
+                        <div className="bg-amber-400 h-2" style={{ width: `${studentUnits.length ? (draftCount / 8) * 100 : 0}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- 2. 児童詳細画面（8教科一覧） ---
+    function StudentDetailView({ student, units, onSelectUnit, onAddUnit, onOpenExport }) {
+      return (
+        <div className="space-y-6">
+          {/* 児童ヘッダー情報 */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-emerald-500 text-white font-bold rounded-2xl flex items-center justify-center text-2xl shadow-md">
+                {student.name.charAt(0)}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">{student.name}</h2>
+                <p className="text-sm text-slate-500">8教科・領域の学習管理 & 個別の指導計画</p>
+              </div>
+            </div>
+
+            <button
+              onClick={onOpenExport}
+              className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-3 rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <i data-lucide="file-text" className="w-5 h-5"></i>
+              <span>個別の指導計画を出力 (Word)</span>
+            </button>
+          </div>
+
+          <h3 className="font-bold text-slate-700 text-lg flex items-center gap-2">
+            <i data-lucide="book" className="w-5 h-5 text-emerald-600"></i>
+            教科・領域一覧
+          </h3>
+
+          {/* 8教科グリッド */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {SUBJECTS.map(subject => {
+              const subjectUnits = units.filter(u => u.subject === subject);
+
+              return (
+                <div key={subject} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`p-2 rounded-xl text-xs font-bold border ${SUBJECT_COLORS[subject]}`}>
+                          <i data-lucide={SUBJECT_ICONS[subject]} className="w-4 h-4 inline-block mr-1"></i>
+                          {subject}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => onAddUnit(subject)}
+                        className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 border border-emerald-200"
+                      >
+                        <i data-lucide="plus" className="w-3.5 h-3.5"></i>
+                        単元を追加
+                      </button>
+                    </div>
+
+                    {/* 単元リスト */}
+                    {subjectUnits.length === 0 ? (
+                      <div className="py-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        単元がまだ登録されていません
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {subjectUnits.map(unit => (
+                          <div 
+                            key={unit.id} 
+                            onClick={() => onSelectUnit(unit.id, subject)}
+                            className="p-3 bg-slate-50 hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-xl cursor-pointer transition-all flex items-start justify-between gap-2 group"
+                          >
+                            <div className="space-y-1">
+                              <div className="font-bold text-sm text-slate-800 group-hover:text-emerald-700">
+                                {unit.title}
+                              </div>
+                              {unit.goal && (
+                                <p className="text-xs text-slate-500 line-clamp-1">
+                                  目標: {unit.goal}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* ステータスバッジ */}
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${
+                              unit.status === '確定' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                              unit.status === '下書き' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                              'bg-slate-200 text-slate-600 border-slate-300'
+                            }`}>
+                              {unit.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // --- 3. 単元・日々の記録・AI評価生成画面 ---
+    function UnitDetailView({ unit, student, logs, onUpdateUnit, onAddLog, onDeleteLog, onUpdateLog }) {
+      const [goalInput, setGoalInput] = useState(unit.goal || '');
+      const [isEditingGoal, setIsEditingGoal] = useState(!unit.goal);
+      const [logInput, setLogInput] = useState('');
+      const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
+
+      // AI評価文用ステータス
+      const [aiEvaluation, setAiEvaluation] = useState(unit.evaluation || '');
+      const [isGenerating, setIsGenerating] = useState(false);
+      const [isEditingEval, setIsEditingEval] = useState(false);
+
+      // 編集用Logステータス
+      const [editingLogId, setEditingLogId] = useState(null);
+      const [editLogContent, setEditLogContent] = useState('');
+      const [editLogDate, setEditLogDate] = useState('');
+
+      useEffect(() => {
+        setGoalInput(unit.goal || '');
+        setAiEvaluation(unit.evaluation || '');
+      }, [unit.id]);
+
+      const handleEvalChange = (e) => {
+        const newVal = e.target.value;
+        setAiEvaluation(newVal);
+        onUpdateUnit({ ...unit, evaluation: newVal, status: unit.status === '未作成' ? '下書き' : unit.status });
+      };
+
+      const handleSaveGoal = () => {
+        onUpdateUnit({ ...unit, goal: goalInput });
+        setIsEditingGoal(false);
+      };
+
+      const handleAddRecord = (e) => {
+        e.preventDefault();
+        if (!logInput.trim()) return;
+        onAddLog(logInput.trim(), logDate);
+        setLogInput('');
+      };
+
+      // AI評価文作成関数（敬体指定）
+      const handleGenerateAIEvaluation = async () => {
+        if (logs.length === 0) {
+          alert('日々の記録がありません。評価文を作成するにはまず日々の記録を入力してください。');
+          return;
+        }
+
+        setIsGenerating(true);
+
+        const logsText = logs.map(l => `・[${l.date}] ${l.content}`).join('\n');
+        
+        const systemPrompt = `あなたは特別支援学校の教員です。児童の様子を温かくかつ客観的に把握し、保護者や関係機関にも分かりやすい評価文を作成します。文章は必ず「です・ます調（敬体）」で統一してください。個人特定につながる表記は避け、一般的な教育用語を用いて記載してください。`;
+        
+        const userPrompt = `以下の情報を基に、個別の指導計画に記載する評価文を作成してください。
+
+【単元名】
+${unit.title}
+
+【個人目標】
+${unit.goal || '（未設定）'}
+
+【日々の記録】
+${logsText}
+
+以下の条件を必ず守ってください。
+1．日々の記録に書かれている事実だけを基にすること
+2．記録にない事実や成果を追加しないこと
+3．児童の変化や成長が分かる場合は具体的に記述すること
+4．必要だった教師の支援が記録されている場合は記述すること
+5．個別の指導計画に適した丁寧で客観的な文章にすること
+6．否定的な表現ではなく、できたことや取り組みの変化を中心に表現すること
+7．過度な推測をしないこと
+8．150〜250文字程度でまとめること
+9．文章の語尾は必ず丁寧な「敬体（です・ます調）」にすること（例: 〜取り組みました。〜が見られます。）
+
+評価文のみを出力してください。`;
+
+        try {
+          const apiKey = ""; 
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: userPrompt }] }],
+              systemInstruction: { parts: [{ text: systemPrompt }] }
+            })
+          });
+
+          const data = await response.json();
+          const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+          if (generatedText) {
+            const trimmedText = generatedText.trim();
+            setAiEvaluation(trimmedText);
+            onUpdateUnit({ ...unit, evaluation: trimmedText, status: '下書き' });
+          } else {
+            alert('AIによる評価文の生成に失敗しました。もう一度お試しください。');
+          }
+        } catch (error) {
+          console.error("AI Generation Error:", error);
+          alert('通信エラーが発生しました。ネットワーク状態を確認してください。');
+        } finally {
+          setIsGenerating(false);
+        }
+      };
+
+      const handleSaveEvaluationStatus = (status) => {
+        onUpdateUnit({ ...unit, evaluation: aiEvaluation, status });
+        setIsEditingEval(false);
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* 単元情報カード */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-xl text-xs font-bold border ${SUBJECT_COLORS[unit.subject]}`}>
+                  {unit.subject}
+                </span>
+                <span className="text-xs text-slate-500">{student.name}</span>
+              </div>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                unit.status === '確定' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                unit.status === '下書き' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                'bg-slate-200 text-slate-600 border-slate-300'
+              }`}>
+                評価状態: {unit.status}
+              </span>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">{unit.title}</h2>
+            </div>
+
+            {/* 個人目標エリア */}
+            <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
+                  <i data-lucide="target" className="w-4 h-4 text-emerald-600"></i>
+                  個人目標
+                </h3>
+                {!isEditingGoal && (
+                  <button 
+                    onClick={() => setIsEditingGoal(true)}
+                    className="text-xs text-emerald-700 hover:underline flex items-center gap-1 font-medium"
+                  >
+                    <i data-lucide="edit-2" className="w-3.5 h-3.5"></i> 編集
+                  </button>
+                )}
+              </div>
+
+              {isEditingGoal ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    placeholder="例: 教師と一緒に、ひらがなを声に出して読むことができる。"
+                    className="w-full p-3 bg-white border border-emerald-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    rows="2"
+                  ></textarea>
+                  <button
+                    onClick={handleSaveGoal}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all"
+                  >
+                    目標を保存
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-800 leading-relaxed font-medium">
+                  {unit.goal || <span className="text-slate-400 italic">目標が未登録です</span>}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 日々の記録（入力 UI） */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <i data-lucide="pen-tool" className="w-5 h-5 text-amber-500"></i>
+              日々の記録を追加
+            </h3>
+
+            <form onSubmit={handleAddRecord} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-bold text-slate-600 flex items-center gap-1 shrink-0">
+                  <i data-lucide="calendar" className="w-4 h-4"></i> 日付
+                </label>
+                <input 
+                  type="date"
+                  value={logDate}
+                  onChange={(e) => setLogDate(e.target.value)}
+                  className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <textarea
+                value={logInput}
+                onChange={(e) => setLogInput(e.target.value)}
+                placeholder="授業や活動中の様子を入力してください... (個人情報の観点から、児童の本名は書かず『児童』や『Aさん』等の表現を推奨します)"
+                className="w-full p-4 bg-slate-50 border border-slate-300 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[100px]"
+              ></textarea>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!logInput.trim()}
+                  className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-2xl shadow border border-amber-400 transition-all flex items-center gap-2 active:scale-95 text-base"
+                >
+                  <i data-lucide="save" className="w-5 h-5"></i>
+                  <span>記録を保存</span>
+                </button>
+              </div>
+            </form>
+
+            {/* 記録一覧 */}
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between">
+                <span>記録の履歴 ({logs.length}件)</span>
+                <span className="text-xs font-normal text-slate-400">新しい記録が上に表示されます</span>
+              </h4>
+
+              {logs.length === 0 ? (
+                <p className="text-center py-6 text-sm text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  まだ記録がありません。上の入力欄から追加してください。
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {logs.map(log => (
+                    <div key={log.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 relative group space-y-2">
+                      {editingLogId === log.id ? (
+                        <div className="space-y-2">
+                          <input 
+                            type="date"
+                            value={editLogDate}
+                            onChange={(e) => setEditLogDate(e.target.value)}
+                            className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs"
+                          />
+                          <textarea
+                            value={editLogContent}
+                            onChange={(e) => setEditLogContent(e.target.value)}
+                            className="w-full p-2 bg-white border border-slate-300 rounded-xl text-sm"
+                            rows="2"
+                          ></textarea>
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => setEditingLogId(null)}
+                              className="text-xs px-3 py-1 rounded-lg text-slate-600 bg-slate-200"
+                            >
+                              キャンセル
+                            </button>
+                            <button 
+                              onClick={() => {
+                                onUpdateLog(log.id, editLogContent, editLogDate);
+                                setEditingLogId(null);
+                              }}
+                              className="text-xs px-3 py-1 rounded-lg text-white bg-emerald-600 font-bold"
+                            >
+                              更新
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600">
+                              {log.date}
+                            </span>
+                            <div className="flex items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => {
+                                  setEditingLogId(log.id);
+                                  setEditLogContent(log.content);
+                                  setEditLogDate(log.date);
+                                }}
+                                className="text-slate-400 hover:text-emerald-600 p-1"
+                                title="編集"
+                              >
+                                <i data-lucide="edit-3" className="w-4 h-4"></i>
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  if (confirm('この記録を削除してもよろしいですか？')) {
+                                    onDeleteLog(log.id);
+                                  }
+                                }}
+                                className="text-slate-400 hover:text-rose-600 p-1"
+                                title="削除"
+                              >
+                                <i data-lucide="trash-2" className="w-4 h-4"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                            {log.content}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* AI評価生成セクション */}
+          <div className="bg-gradient-to-br from-white to-emerald-50/40 border border-emerald-200 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                  <i data-lucide="sparkles" className="w-5 h-5 text-emerald-600"></i>
+                  個別の指導計画 評価文の作成（敬体・自動保存）
+                </h3>
+                <p className="text-xs text-slate-500">日々の記録を基に、敬体（です・ます調）で整えた評価文をAIが下書きします。</p>
+              </div>
+
+              <button
+                onClick={handleGenerateAIEvaluation}
+                disabled={isGenerating}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-2xl shadow border border-emerald-500 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+              >
+                {isGenerating ? (
+                  <>
+                    <i data-lucide="loader" className="w-5 h-5 animate-spin"></i>
+                    <span>AI作成中...</span>
+                  </>
+                ) : (
+                  <>
+                    <i data-lucide="bot" className="w-5 h-5"></i>
+                    <span>{aiEvaluation ? '敬体でAI評価文を再生成' : '敬体でAI評価文を生成'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 生成テキスト表示 & 編集エリア */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                <span>評価文内容 ({aiEvaluation.length} 文字)</span>
+                <span className="text-emerald-700">文字数目安: 150〜250文字程度</span>
+              </div>
+
+              {isEditingEval || !aiEvaluation ? (
+                <textarea
+                  value={aiEvaluation}
+                  onChange={handleEvalChange}
+                  placeholder="「AI評価文を生成」ボタンを押すか、直接入力してください。（入力した文章は端末に自動保存されます）"
+                  className="w-full p-4 bg-white border border-emerald-300 rounded-2xl text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[140px]"
+                ></textarea>
+              ) : (
+                <div className="p-4 bg-white rounded-2xl border border-emerald-200 text-base leading-relaxed text-slate-800 whitespace-pre-wrap font-medium">
+                  {aiEvaluation}
+                </div>
+              )}
+
+              {/* ボタン操作 */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div>
+                  {!isEditingEval && aiEvaluation && (
+                    <button
+                      onClick={() => setIsEditingEval(true)}
+                      className="text-xs text-emerald-800 hover:underline flex items-center gap-1 font-bold bg-white px-3 py-1.5 rounded-xl border border-emerald-200"
+                    >
+                      <i data-lucide="edit-2" className="w-3.5 h-3.5"></i> 文章を直接編集
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSaveEvaluationStatus('下書き')}
+                    className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold px-4 py-2 rounded-xl text-xs transition-all"
+                  >
+                    下書き状態に設定
+                  </button>
+                  <button
+                    onClick={() => handleSaveEvaluationStatus('確定')}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-xs transition-all flex items-center gap-1"
+                  >
+                    <i data-lucide="check-circle" className="w-4 h-4"></i>
+                    評価を確定する
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- モーダル1: クイック記録追加モーダル ---
+    function QuickRecordModal({ students, units, subjects, onClose, onSaveLog, onCreateUnitAndLog }) {
+      const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
+      const [selectedSubject, setSelectedSubject] = useState(subjects[0]);
+      const [selectedUnitId, setSelectedUnitId] = useState('');
+      const [newUnitTitle, setNewUnitTitle] = useState('');
+      const [newUnitGoal, setNewUnitGoal] = useState('');
+      const [logContent, setLogContent] = useState('');
+      const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
+
+      const availableUnits = units.filter(u => u.studentId === selectedStudentId && u.subject === selectedSubject);
+
+      useEffect(() => {
+        if (availableUnits.length > 0) {
+          setSelectedUnitId(availableUnits[0].id);
+        } else {
+          setSelectedUnitId('new');
+        }
+      }, [selectedStudentId, selectedSubject]);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!logContent.trim()) return;
+
+        if (selectedUnitId === 'new') {
+          if (!newUnitTitle.trim()) {
+            alert('新しい単元名を入力してください');
+            return;
+          }
+          onCreateUnitAndLog(selectedStudentId, selectedSubject, newUnitTitle.trim(), newUnitGoal.trim(), logContent.trim(), logDate);
+        } else {
+          onSaveLog(selectedUnitId, logContent.trim(), logDate);
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <i data-lucide="zap" className="w-5 h-5 text-amber-500 fill-current"></i>
+                今日の記録を追加
+              </h3>
+              <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400">
+                <i data-lucide="x" className="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">児童を選択</label>
+                <select 
+                  value={selectedStudentId}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500"
+                >
+                  {students.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">教科・領域</label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {subjects.map(subj => (
+                    <button
+                      key={subj}
+                      type="button"
+                      onClick={() => setSelectedSubject(subj)}
+                      className={`p-2 rounded-xl text-xs font-bold border text-center transition-all ${
+                        selectedSubject === subj 
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {subj}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">単元</label>
+                <select 
+                  value={selectedUnitId}
+                  onChange={(e) => setSelectedUnitId(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+                >
+                  {availableUnits.map(u => (
+                    <option key={u.id} value={u.id}>{u.title}</option>
+                  ))}
+                  <option value="new">＋ 新しい単元を作成して記録する</option>
+                </select>
+              </div>
+
+              {selectedUnitId === 'new' && (
+                <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
+                  <input
+                    type="text"
+                    placeholder="新単元名 (例: ひらがなを読もう)"
+                    value={newUnitTitle}
+                    onChange={(e) => setNewUnitTitle(e.target.value)}
+                    className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="個人目標 (任意)"
+                    value={newUnitGoal}
+                    onChange={(e) => setNewUnitGoal(e.target.value)}
+                    className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-xs"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">記録日</label>
+                <input 
+                  type="date"
+                  value={logDate}
+                  onChange={(e) => setLogDate(e.target.value)}
+                  className="p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">記録内容</label>
+                <textarea
+                  value={logContent}
+                  onChange={(e) => setLogContent(e.target.value)}
+                  placeholder="児童の様子やできたこと、必要だった支援などを自由に入力..."
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm min-h-[90px] focus:ring-2 focus:ring-amber-400"
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 font-bold text-xs"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={!logContent.trim()}
+                  className="px-5 py-2 rounded-xl text-white bg-amber-500 hover:bg-amber-600 font-bold text-xs shadow-xs"
+                >
+                  保存する
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- モーダル2: 児童追加モーダル ---
+    function AddStudentModal({ onClose, onAdd }) {
+      const [name, setName] = useState('');
+
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <h3 className="font-bold text-lg text-slate-800">児童の新規登録</h3>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">表示用名称（実名は避け『児童A』などを強く推薦）</label>
+              <input
+                type="text"
+                placeholder="例: 児童A"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-base focus:ring-2 focus:ring-emerald-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 font-bold text-xs"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => onAdd(name)}
+                disabled={!name.trim()}
+                className="px-5 py-2 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 font-bold text-xs shadow-xs"
+              >
+                登録
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- モーダル3: 個別の指導計画 Word (.docx) 出力モーダル ---
+    function WordExportModal({ student, units, subjects, onClose }) {
+      const [onlyConfirmed, setOnlyConfirmed] = useState(true);
+      const [isExporting, setIsExporting] = useState(false);
+
+      const currentDateStr = new Date().toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const handleDownloadWord = async () => {
+        setIsExporting(true);
+
+        try {
+          const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } = window.docx;
+
+          const filteredUnits = units.filter(u => onlyConfirmed ? u.status === '確定' : true);
+
+          const tableRows = [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 15, type: WidthType.PERCENTAGE },
+                  children: [new Paragraph({ children: [new TextRun({ text: "教科・領域", bold: true })] })],
+                  shading: { fill: "E2EFDA" },
+                }),
+                new TableCell({
+                  width: { size: 25, type: WidthType.PERCENTAGE },
+                  children: [new Paragraph({ children: [new TextRun({ text: "単元名・個人目標", bold: true })] })],
+                  shading: { fill: "E2EFDA" },
+                }),
+                new TableCell({
+                  width: { size: 60, type: WidthType.PERCENTAGE },
+                  children: [new Paragraph({ children: [new TextRun({ text: "評価", bold: true })] })],
+                  shading: { fill: "E2EFDA" },
+                }),
+              ],
+            }),
+          ];
+
+          subjects.forEach(subject => {
+            const subjectUnits = filteredUnits.filter(u => u.subject === subject);
+
+            if (subjectUnits.length === 0) {
+              tableRows.push(
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: subject, bold: true })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "（未登録）", italics: true, color: "888888" })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "（未登録）", italics: true, color: "888888" })] })] }),
+                  ],
+                })
+              );
+            } else {
+              subjectUnits.forEach(u => {
+                tableRows.push(
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: subject, bold: true })] })],
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({ children: [new TextRun({ text: `【単元】${u.title}`, bold: true })] }),
+                          new Paragraph({ children: [new TextRun({ text: `【目標】${u.goal || '（未設定）'}` })] }),
+                        ],
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({
+                            children: [new TextRun({ text: u.evaluation || '（評価未作成）' })]
+                          })
+                        ],
+                      }),
+                    ],
+                  })
+                );
+              });
+            }
+          });
+
+          const doc = new Document({
+            sections: [
+              {
+                properties: {},
+                children: [
+                  new Paragraph({
+                    text: "個別の指導計画 評価記録",
+                    heading: "Heading1",
+                    alignment: AlignmentType.CENTER,
+                  }),
+                  new Paragraph({ text: "" }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({ text: `対象: `, bold: true }),
+                      new TextRun({ text: `${student.name}  ` }),
+                      new TextRun({ text: `出力日: `, bold: true }),
+                      new TextRun({ text: `${currentDateStr}` }),
+                    ],
+                    alignment: AlignmentType.RIGHT,
+                  }),
+                  new Paragraph({ text: "" }),
+                  new Table({
+                    rows: tableRows,
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              },
+            ],
+          });
+
+          const blob = await Packer.toBlob(doc);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `個別の指導計画_${student.name}_${new Date().toISOString().split('T')[0]}.docx`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error("Word Document Generation Error:", err);
+          alert('Wordファイルの生成に失敗しました。');
+        } finally {
+          setIsExporting(false);
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <i data-lucide="file-text" className="w-5 h-5 text-emerald-600"></i>
+                個別の指導計画 出力 (Word)
+              </h3>
+              <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400">
+                <i data-lucide="x" className="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-slate-700">対象: {student.name}</span>
+                <span className="text-xs text-slate-500">出力日: {currentDateStr}</span>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer pt-2">
+                <input
+                  type="checkbox"
+                  checked={onlyConfirmed}
+                  onChange={(e) => setOnlyConfirmed(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                />
+                <span>「確定済み」の評価のみ出力する（チェックを外すと下書きも含む）</span>
+              </label>
+            </div>
+
+            {/* プレビュー表示 */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-500 uppercase">出力内容プレビュー</h4>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 max-h-[260px] overflow-y-auto custom-scrollbar text-xs space-y-3">
+                {subjects.map(subj => {
+                  const targetUnits = units.filter(u => u.subject === subj && (onlyConfirmed ? u.status === '確定' : true));
+                  return (
+                    <div key={subj} className="border-b border-slate-200 pb-2">
+                      <div className="font-bold text-emerald-800 mb-1">【{subj}】</div>
+                      {targetUnits.length === 0 ? (
+                        <div className="text-slate-400 italic">該当する指導評価がありません</div>
+                      ) : (
+                        targetUnits.map(u => (
+                          <div key={u.id} className="ml-2 space-y-0.5">
+                            <div className="font-bold text-slate-700">単元: {u.title}</div>
+                            <div className="text-slate-600">目標: {u.goal || '（未設定）'}</div>
+                            <div className="text-slate-800 bg-white p-2 rounded border border-slate-200 mt-1">
+                              評価: {u.evaluation || '（未作成）'}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 font-bold text-xs"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDownloadWord}
+                disabled={isExporting}
+                className="px-6 py-2.5 rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 font-bold text-xs shadow-md flex items-center gap-2 active:scale-95"
+              >
+                <i data-lucide="download" className="w-4 h-4"></i>
+                <span>{isExporting ? '生成中...' : 'Word (.docx) をダウンロード'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
