@@ -840,7 +840,8 @@ ${logsText}
 評価文のみを出力してください。`;
 
         try {
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+          // 有効なモデル指定 (gemini-1.5-flash) に変更
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
 
           const response = await fetch(apiUrl, {
             method: 'POST',
