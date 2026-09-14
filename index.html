@@ -860,7 +860,7 @@ ${logsText}
 3．児童の変化や成長、必要だった支援を含めて記述すること
 4．個別の指導計画に適した丁寧で客観的な文章にすること
 5．否定的な表現ではなく、できたことや取り組みの変化を中心に表現すること
-6．必ず「50文字以上、80文字以内」で簡潔にまとめること（絶対に80文字を超えないこと）
+6．必ず「70文字以上、100文字以内」で簡潔にまとめること（絶対に100文字を超えないこと）
 7．文章の語尾は必ず丁寧な「敬体（です・ます調）」にすること（例: 〜取り組みました。〜が見られます。）
 
 評価文のみを出力してください。`;
@@ -1033,9 +1033,9 @@ ${logsText}
               <div>
                 <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
                   <Icon name="sparkles" className="w-5 h-5 text-emerald-600" />
-                  個別の指導計画 評価文の作成（50〜80文字・敬体）
+                  個別の指導計画 評価文の作成（70〜100文字・敬体）
                 </h3>
-                <p className="text-xs text-slate-500">日々の記録を基に、50〜80文字のコンパクトな敬体評価文をAIが作成します。</p>
+                <p className="text-xs text-slate-500">日々の記録を基に、70〜100文字のコンパクトな敬体評価文をAIが作成します。</p>
               </div>
 
               <button
@@ -1060,8 +1060,8 @@ ${logsText}
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                 <span>評価文内容 ({aiEvaluation.length} 文字)</span>
-                <span className={aiEvaluation.length > 80 || (aiEvaluation.length < 50 && aiEvaluation.length > 0) ? "text-amber-600" : "text-emerald-700"}>
-                  文字数目安: 50〜80文字程度
+                <span className={aiEvaluation.length > 100 || (aiEvaluation.length < 70 && aiEvaluation.length > 0) ? "text-amber-600" : "text-emerald-700"}>
+                  文字数目安: 70〜100文字程度
                 </span>
               </div>
 
