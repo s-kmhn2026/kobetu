@@ -866,7 +866,7 @@ ${logsText}
 評価文のみを出力してください。`;
 
         try {
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey.trim()}`;
 
           const response = await fetch(apiUrl, {
             method: 'POST',
